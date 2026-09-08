@@ -56,10 +56,11 @@ on:
         type: string
         default: main
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# No permissions: block here — a reusable workflow can't grant itself
+# `pages`/`id-token` when called cross-repo; declaring them here caused an
+# immediate startup_failure with zero jobs ever scheduled (confirmed by
+# bisecting a minimal reproduction). The calling repo's own job must grant
+# them instead — see this repo's README for the exact caller snippet.
 
 concurrency:
   group: pages

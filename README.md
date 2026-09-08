@@ -50,6 +50,14 @@ on:
 
 jobs:
   docs:
+    # Required here, not inside build-docs.yml itself: a reusable workflow
+    # can't self-grant pages/id-token when called cross-repo — the caller's
+    # own job has to. Omitting this fails instantly with zero jobs ever
+    # scheduled (GitHub reports it as a generic "workflow file issue").
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     uses: ohstr/docs-kit/.github/workflows/build-docs.yml@main
     with:
       title: your-project-name
