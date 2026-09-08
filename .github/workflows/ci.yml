@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Dogfood: build this repo's own docs using itself as the content
+      # source. Doesn't need AGENTS.md/CHANGELOG.md to exist (both optional)
+      # — this also doubles as the test that gap is handled cleanly.
+      - name: Build (self-hosted smoke test)
+        env:
+          DOCS_CONTENT_DIR: ${{ github.workspace }}
+          DOCS_GITHUB_URL: https://github.com/ohstr/docs-kit
+          DOCS_SITE_URL: https://ohstr.github.io
+          DOCS_BASE_PATH: /docs-kit
+          DOCS_TITLE: docs-kit
+          DOCS_ACCENT_HUE: '200'
+        run: npm run build
+
+      - name: Verify expected output
+        run: |
+          test -f dist/index.html
+          grep -q 'docs-kit' dist/index.html

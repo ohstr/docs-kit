@@ -1,0 +1,28 @@
+{
+  "name": "docs-kit",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Shared Astro + Starlight docs site generator for ohstr projects — mirrors a repo's README.md/AGENTS.md/CHANGELOG.md into a themed docs site, driven entirely by env vars (no per-repo copy of this app).",
+  "repository": "github:ohstr/docs-kit",
+  "scripts": {
+    "sync-docs": "node scripts/sync-docs.mjs",
+    "predev": "astro dev stop || true",
+    "dev": "concurrently -n docs,astro -c yellow,cyan \"node scripts/sync-docs.mjs --watch\" \"astro dev\"",
+    "start": "npm run dev",
+    "prebuild": "npm run sync-docs",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.42.0",
+    "astro": "^7.2.10",
+    "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "allowScripts": {
+    "esbuild": true
+  }
+}

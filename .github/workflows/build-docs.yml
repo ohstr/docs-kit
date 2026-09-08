@@ -1,0 +1,128 @@
+name: Build docs
+
+# Reusable workflow — a project repo calls this instead of vendoring this
+# app under its own site/. Most context (repo URL, site URL, base path)
+# comes for free from `github.*`, which reflects the CALLING repo inside a
+# workflow_call job, not this repo. Only real per-project choices are
+# inputs: title, description, and the theming knobs.
+on:
+  workflow_call:
+    inputs:
+      title:
+        description: Site title (and README page title).
+        required: true
+        type: string
+      description:
+        description: Meta description for the README page.
+        required: false
+        type: string
+        default: ''
+      accent-hue:
+        description: >-
+          HSL hue (0-360) for the accent color. Starlight's own default
+          (234, blue) is used if omitted — pick something that reads as
+          "yours": e.g. ncash uses 142 (money green).
+        required: false
+        type: number
+        default: 234
+      favicon-glyph:
+        description: Short glyph/text for the generated favicon (e.g. "$", ">_").
+        required: false
+        type: string
+        default: '>_'
+      extra-css:
+        description: >-
+          Optional path (relative to the calling repo's root) to a CSS file
+          applied after this kit's base styles, for art-direction beyond
+          what accent-hue covers.
+        required: false
+        type: string
+        default: ''
+      extra-public-dir:
+        description: >-
+          Optional path (relative to the calling repo's root) to a directory
+          of extra static files (install scripts, an agent PROMPT.md, ...)
+          copied verbatim into the deployed site's root.
+        required: false
+        type: string
+        default: ''
+      docs-kit-ref:
+        description: >-
+          Which ref of ohstr/docs-kit to build with. Defaults to `main`, but
+          callers should pin to a released tag once this kit has any —
+          otherwise a template change can silently change every project's
+          docs site's build on its next push.
+        required: false
+        type: string
+        default: main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout calling repo
+        uses: actions/checkout@v4
+        with:
+          path: target
+
+      - name: Checkout docs-kit
+        uses: actions/checkout@v4
+        with:
+          repository: ohstr/docs-kit
+          ref: ${{ inputs.docs-kit-ref }}
+          path: docs-kit
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: docs-kit/package-lock.json
+
+      - name: Install
+        working-directory: docs-kit
+        run: npm ci
+
+      - name: Copy extra public assets
+        if: inputs.extra-public-dir != ''
+        run: |
+          mkdir -p "docs-kit/public"
+          cp -r "target/${{ inputs.extra-public-dir }}/." "docs-kit/public/"
+
+      - name: Build
+        working-directory: docs-kit
+        env:
+          DOCS_CONTENT_DIR: ${{ github.workspace }}/target
+          DOCS_GITHUB_URL: https://github.com/${{ github.repository }}
+          DOCS_SITE_URL: https://${{ github.repository_owner }}.github.io
+          DOCS_BASE_PATH: /${{ github.event.repository.name }}
+          DOCS_TITLE: ${{ inputs.title }}
+          DOCS_DESCRIPTION: ${{ inputs.description }}
+          DOCS_ACCENT_HUE: ${{ inputs.accent-hue }}
+          DOCS_FAVICON_GLYPH: ${{ inputs.favicon-glyph }}
+          DOCS_EXTRA_CSS: ${{ inputs.extra-css != '' && format('{0}/target/{1}', github.workspace, inputs.extra-css) || '' }}
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-kit/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

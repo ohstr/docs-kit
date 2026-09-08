@@ -1,0 +1,28 @@
+# build output
+dist/
+# generated types
+.astro/
+
+# generated from DOCS_CONTENT_DIR's README.md/AGENTS.md/CHANGELOG.md by
+# scripts/sync-docs.mjs, and from DOCS_ACCENT_HUE/DOCS_FAVICON_GLYPH by
+# astro.config.mjs
+src/content/docs/*.md
+src/generated/
+public/favicon.svg
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
