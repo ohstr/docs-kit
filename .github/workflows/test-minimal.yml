@@ -3,8 +3,23 @@ name: Test minimal
 on:
   workflow_call:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
-  hello:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "hello from docs-kit"
+      - run: echo "build step"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        run: echo "page_url=https://example.com" >> "$GITHUB_OUTPUT"
