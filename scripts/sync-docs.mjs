@@ -81,18 +81,39 @@ const PAGES = [
 ];
 
 function rewriteLinks(markdown) {
-  // Any relative link — not http(s), not a bare in-page "#anchor" — either
-  // points at one of the pages mirrored here (ROUTES) or needs to become an
-  // absolute link back to the source repo on GitHub, since nothing else in
-  // the tree (LICENSE, skills/, workflow files, ...) has a route here.
-  return markdown.replace(/\]\((?!#)([^)\s]+?)(#[^)]*)?\)/g, (match, target, anchor = '') => {
-    if (/^(https?:)?\/\//.test(target) || target.startsWith('/')) return match;
-    const route = ROUTES[target];
-    if (route) return `](${route}${anchor})`;
-    if (!GITHUB_URL) return match;
-    const kind = target.endsWith('/') ? 'tree' : 'blob';
-    return `](${GITHUB_URL}/${kind}/main/${target}${anchor})`;
-  });
+  // Images first, as their own pass: they need raw content (GitHub's /raw/
+  // path, which redirects to the actual file bytes), not /blob/'s HTML
+  // file-viewer page — an <img src> pointed at /blob/ renders as a broken
+  // image, since that URL serves a full HTML page, not image bytes. Matched
+  // only when directly preceded by "!", with the alt-text bracket captured
+  // whole, so this can't misfire on a plain link whose text happens to
+  // contain an image (e.g. a badge: "[![Release](...)](...)"). Anything an
+  // image target itself points at (GITHUB_URL/ROUTES) is a file, never a
+  // directory, so there's no tree/blob split to make here like below.
+  const rewriteImages = (md) =>
+    md.replace(/(!\[[^\]]*\])\((?!#)([^)\s]+?)(#[^)]*)?\)/g, (match, altPart, target, anchor = '') => {
+      if (/^(https?:)?\/\//.test(target) || target.startsWith('/') || !GITHUB_URL) return match;
+      return `${altPart}(${GITHUB_URL}/raw/main/${target}${anchor})`;
+    });
+
+  // Any other relative link — not http(s), not a bare in-page "#anchor" —
+  // either points at one of the pages mirrored here (ROUTES) or needs to
+  // become an absolute link back to the source repo on GitHub, since
+  // nothing else in the tree (LICENSE, skills/, workflow files, ...) has a
+  // route here. Runs after rewriteImages; re-scanning an already-rewritten
+  // image's now-absolute URL is harmless (the http(s) check below just
+  // leaves it alone).
+  const rewritePlainLinks = (md) =>
+    md.replace(/\]\((?!#)([^)\s]+?)(#[^)]*)?\)/g, (match, target, anchor = '') => {
+      if (/^(https?:)?\/\//.test(target) || target.startsWith('/')) return match;
+      const route = ROUTES[target];
+      if (route) return `](${route}${anchor})`;
+      if (!GITHUB_URL) return match;
+      const kind = target.endsWith('/') ? 'tree' : 'blob';
+      return `](${GITHUB_URL}/${kind}/main/${target}${anchor})`;
+    });
+
+  return rewritePlainLinks(rewriteImages(markdown));
 }
 
 function stripLeadingH1(markdown) {
