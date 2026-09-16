@@ -25,6 +25,12 @@ instead of N copies drifting apart.
   becomes an absolute link back to the source repo on GitHub.
 - Generates a themed favicon and accent color per project from two inputs
   (`accent-hue`, `favicon-glyph`) — no per-project asset to hand-craft.
+- Shows the target repo's latest GitHub release as a small pill next to the
+  site title, linking to its release page — fetched automatically, no input
+  to set, silently omitted if the repo has no releases yet. Placed in the
+  header's title area (not its GitHub-icon/theme group) since that's the one
+  part Starlight never hides on narrow viewports, so it reaches mobile for
+  free too.
 - Ships two non-obvious fixes on top of stock Starlight: badge rows
   (`[![...]](...)` badge sequences) render inline instead of stacking one
   per line, and the mobile sidebar menu actually closes when you tap a
@@ -114,6 +120,9 @@ these — see the comments at the top of each for the full contract:
 - `DOCS_TITLE`, `DOCS_DESCRIPTION`
 - `DOCS_ACCENT_HUE`, `DOCS_FAVICON_GLYPH`
 - `DOCS_EXTRA_CSS`
+- `DOCS_LATEST_RELEASE_TAG`, `DOCS_LATEST_RELEASE_URL` — from `gh api
+  .../releases/latest`, run in `build-docs.yml` itself (needs a token, so
+  it can't happen inside this app); empty when the repo has no releases
 
 ## Repo layout
 

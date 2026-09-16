@@ -13,12 +13,27 @@ const BASE_PATH = process.env.DOCS_BASE_PATH ?? '';
 const ACCENT_HUE = Number(process.env.DOCS_ACCENT_HUE ?? 234); // 234 = Starlight's own default blue
 const FAVICON_GLYPH = process.env.DOCS_FAVICON_GLYPH ?? '>_';
 const EXTRA_CSS = process.env.DOCS_EXTRA_CSS; // optional absolute path, from the target repo
+// Fetched by build-docs.yml via `gh api .../releases/latest` (needs a
+// GitHub API call + token, so it belongs in the workflow, not here) and
+// simply empty when the target repo has no release yet.
+const RELEASE_TAG = process.env.DOCS_LATEST_RELEASE_TAG ?? '';
+const RELEASE_URL = process.env.DOCS_LATEST_RELEASE_URL ?? '';
 
 // Favicon is generated (not a static file) so every project gets a themed
 // tab icon for free — same glyph shape as before, tinted to DOCS_ACCENT_HUE.
 writeFileSync(
 	fileURLToPath(new URL('./public/favicon.svg', import.meta.url)),
 	`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="70" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-weight="700" fill="hsl(${ACCENT_HUE}, 70%, 45%)">${FAVICON_GLYPH}</text></svg>\n`
+);
+
+// Read by src/components/SiteTitle.astro (a Starlight component override,
+// registered below) to render the header release badge. A generated file
+// rather than a Starlight config value because it needs to reach a
+// component at render time, not just astro.config.mjs itself — same reason
+// readme-nav.json exists below.
+writeFileSync(
+	fileURLToPath(new URL('./src/generated/release.json', import.meta.url)),
+	JSON.stringify({ tag: RELEASE_TAG, url: RELEASE_URL })
 );
 
 // Written by scripts/sync-docs.mjs (runs as the `prebuild`/`predev` npm
@@ -70,6 +85,7 @@ export default defineConfig({
 			description: DESCRIPTION,
 			social: GITHUB_URL ? [{ icon: 'github', label: 'GitHub', href: GITHUB_URL }] : [],
 			customCss: ['./src/styles/custom.css', ...(EXTRA_CSS ? [EXTRA_CSS] : [])],
+			components: { SiteTitle: './src/components/SiteTitle.astro' },
 			sidebar,
 			head: [
 				{

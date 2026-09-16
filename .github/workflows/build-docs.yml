@@ -82,6 +82,21 @@ jobs:
           ref: ${{ inputs.docs-kit-ref }}
           path: docs-kit
 
+      - name: Fetch latest release
+        id: latest-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A brand-new repo has no releases yet — that's normal, not a
+          # failure: degrade to no header badge (astro.config.mjs treats an
+          # empty tag the same as an absent AGENTS.md/CHANGELOG.md) instead
+          # of failing the whole docs build over it.
+          data=$(gh api "repos/${{ github.repository }}/releases/latest" 2>/dev/null) || true
+          if [ -n "$data" ]; then
+            echo "tag=$(jq -r .tag_name <<<"$data")" >> "$GITHUB_OUTPUT"
+            echo "url=$(jq -r .html_url <<<"$data")" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -110,6 +125,8 @@ jobs:
           DOCS_ACCENT_HUE: ${{ inputs.accent-hue }}
           DOCS_FAVICON_GLYPH: ${{ inputs.favicon-glyph }}
           DOCS_EXTRA_CSS: ${{ inputs.extra-css != '' && format('{0}/target/{1}', github.workspace, inputs.extra-css) || '' }}
+          DOCS_LATEST_RELEASE_TAG: ${{ steps.latest-release.outputs.tag }}
+          DOCS_LATEST_RELEASE_URL: ${{ steps.latest-release.outputs.url }}
         run: npm run build
 
       - uses: actions/configure-pages@v5
