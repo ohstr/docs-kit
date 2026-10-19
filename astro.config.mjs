@@ -1,5 +1,6 @@
 // @ts-check
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, copyFileSync, mkdirSync } from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
@@ -13,18 +14,50 @@ const BASE_PATH = process.env.DOCS_BASE_PATH ?? '';
 const ACCENT_HUE = Number(process.env.DOCS_ACCENT_HUE ?? 234); // 234 = Starlight's own default blue
 const FAVICON_GLYPH = process.env.DOCS_FAVICON_GLYPH ?? '>_';
 const EXTRA_CSS = process.env.DOCS_EXTRA_CSS; // optional absolute path, from the target repo
+// Optional absolute paths, from the target repo: header logo (plus a dark-theme
+// variant) and a favicon file that replaces the generated glyph one.
+const LOGO = process.env.DOCS_LOGO;
+const LOGO_DARK = process.env.DOCS_LOGO_DARK;
+const LOGO_REPLACES_TITLE = process.env.DOCS_LOGO_REPLACES_TITLE === 'true';
+const FAVICON = process.env.DOCS_FAVICON;
 // Fetched by build-docs.yml via `gh api .../releases/latest` (needs a
 // GitHub API call + token, so it belongs in the workflow, not here) and
 // simply empty when the target repo has no release yet.
 const RELEASE_TAG = process.env.DOCS_LATEST_RELEASE_TAG ?? '';
 const RELEASE_URL = process.env.DOCS_LATEST_RELEASE_URL ?? '';
 
-// Favicon is generated (not a static file) so every project gets a themed
-// tab icon for free — same glyph shape as before, tinted to DOCS_ACCENT_HUE.
-writeFileSync(
-	fileURLToPath(new URL('./public/favicon.svg', import.meta.url)),
-	`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="70" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-weight="700" fill="hsl(${ACCENT_HUE}, 70%, 45%)">${FAVICON_GLYPH}</text></svg>\n`
-);
+// Copies a target-repo file into this app as `<dir>/<name><ext>`; returns that
+// path relative to the app root.
+function bring(src, dir, name) {
+	if (!existsSync(src)) throw new Error(`docs-kit: ${src} does not exist`);
+	const rel = `${dir}/${name}${path.extname(src).toLowerCase()}`;
+	const dest = fileURLToPath(new URL(`./${rel}`, import.meta.url));
+	mkdirSync(path.dirname(dest), { recursive: true });
+	copyFileSync(src, dest);
+	return rel;
+}
+
+// A project's own favicon wins; otherwise one is generated so every project
+// still gets a themed tab icon: the glyph, tinted to DOCS_ACCENT_HUE.
+let favicon = '/favicon.svg';
+if (FAVICON) {
+	favicon = '/' + path.basename(bring(FAVICON, 'public', 'favicon'));
+} else {
+	writeFileSync(
+		fileURLToPath(new URL('./public/favicon.svg', import.meta.url)),
+		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="70" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-weight="700" fill="hsl(${ACCENT_HUE}, 70%, 45%)">${FAVICON_GLYPH}</text></svg>\n`
+	);
+}
+
+// Starlight resolves logo paths through Vite, so they must live inside this app.
+/** @type {import('@astrojs/starlight/types').StarlightUserConfig['logo']} */
+let logo;
+if (LOGO) {
+	const light = './' + bring(LOGO, 'src/generated/brand', 'logo');
+	logo = LOGO_DARK
+		? { light, dark: './' + bring(LOGO_DARK, 'src/generated/brand', 'logo-dark'), replacesTitle: LOGO_REPLACES_TITLE }
+		: { src: light, replacesTitle: LOGO_REPLACES_TITLE };
+}
 
 // Read by src/components/SiteTitle.astro (a Starlight component override,
 // registered below) to render the header release badge. A generated file
@@ -83,6 +116,8 @@ export default defineConfig({
 		starlight({
 			title: TITLE,
 			description: DESCRIPTION,
+			favicon,
+			...(logo ? { logo } : {}),
 			social: GITHUB_URL ? [{ icon: 'github', label: 'GitHub', href: GITHUB_URL }] : [],
 			customCss: ['./src/styles/custom.css', ...(EXTRA_CSS ? [EXTRA_CSS] : [])],
 			components: { SiteTitle: './src/components/SiteTitle.astro' },
