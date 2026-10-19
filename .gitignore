@@ -4,11 +4,11 @@ dist/
 .astro/
 
 # generated from DOCS_CONTENT_DIR's README.md/AGENTS.md/CHANGELOG.md by
-# scripts/sync-docs.mjs, and from DOCS_ACCENT_HUE/DOCS_FAVICON_GLYPH by
+# scripts/sync-docs.mjs, and from DOCS_ACCENT_HUE/DOCS_FAVICON_GLYPH/DOCS_FAVICON/DOCS_LOGO by
 # astro.config.mjs
 src/content/docs/*.md
 src/generated/
-public/favicon.svg
+public/favicon.*
 
 # dependencies
 node_modules/

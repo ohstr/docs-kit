@@ -25,6 +25,8 @@ instead of N copies drifting apart.
   becomes an absolute link back to the source repo on GitHub.
 - Generates a themed favicon and accent color per project from two inputs
   (`accent-hue`, `favicon-glyph`) — no per-project asset to hand-craft.
+  A project with its own brand passes `logo` (header, optionally
+  `logo-dark`) and `favicon` files from its repo instead.
 - Shows the target repo's latest GitHub release as a small pill next to the
   site title, linking to its release page — fetched automatically, no input
   to set, silently omitted if the repo has no releases yet. Placed in the
@@ -88,6 +90,10 @@ avoids by using Actions-based deployment from the start).
 | `description` | no | `''` | Meta description |
 | `accent-hue` | no | `234` (Starlight blue) | HSL hue, 0-360 |
 | `favicon-glyph` | no | `>_` | Generated favicon text |
+| `favicon` | no | `''` | Path (in the calling repo) to a `.svg`/`.png`/`.ico` favicon; replaces the generated one |
+| `logo` | no | `''` | Path (in the calling repo) to an image shown in the header next to the title |
+| `logo-dark` | no | `''` | Dark-theme variant of `logo` |
+| `logo-replaces-title` | no | `false` | Show only the logo, no title text (for a logo that includes the name) |
 | `extra-css` | no | `''` | Path (in the calling repo) to a CSS file applied after this kit's base styles — for art-direction beyond a hue |
 | `extra-public-dir` | no | `''` | Path (in the calling repo) to a directory of static files (install scripts, an agent `PROMPT.md`, ...) copied verbatim into the deployed site's root |
 | `docs-kit-ref` | no | `main` | Which ref of this repo to build with — **pin this to a released tag** once one exists, so a docs-kit change doesn't silently change every project's site on its next push |
@@ -119,6 +125,8 @@ these — see the comments at the top of each for the full contract:
 - `DOCS_GITHUB_URL`, `DOCS_SITE_URL`, `DOCS_BASE_PATH`
 - `DOCS_TITLE`, `DOCS_DESCRIPTION`
 - `DOCS_ACCENT_HUE`, `DOCS_FAVICON_GLYPH`
+- `DOCS_FAVICON`, `DOCS_LOGO`, `DOCS_LOGO_DARK` — absolute paths into the
+  target repo; `DOCS_LOGO_REPLACES_TITLE` — `true`/`false`
 - `DOCS_EXTRA_CSS`
 - `DOCS_LATEST_RELEASE_TAG`, `DOCS_LATEST_RELEASE_URL` — from `gh api
   .../releases/latest`, run in `build-docs.yml` itself (needs a token, so

@@ -30,6 +30,30 @@ on:
         required: false
         type: string
         default: '>_'
+      logo:
+        description: >-
+          Optional path (relative to the calling repo's root) to an image
+          (SVG, PNG, ...) shown in the header next to the title.
+        required: false
+        type: string
+        default: ''
+      logo-dark:
+        description: Optional dark-theme variant of `logo`.
+        required: false
+        type: string
+        default: ''
+      logo-replaces-title:
+        description: Hide the title text and show only the logo (keep it when the logo has no wordmark).
+        required: false
+        type: boolean
+        default: false
+      favicon:
+        description: >-
+          Optional path (relative to the calling repo's root) to a favicon
+          (.svg, .png or .ico). Replaces the one generated from favicon-glyph.
+        required: false
+        type: string
+        default: ''
       extra-css:
         description: >-
           Optional path (relative to the calling repo's root) to a CSS file
@@ -124,6 +148,10 @@ jobs:
           DOCS_DESCRIPTION: ${{ inputs.description }}
           DOCS_ACCENT_HUE: ${{ inputs.accent-hue }}
           DOCS_FAVICON_GLYPH: ${{ inputs.favicon-glyph }}
+          DOCS_FAVICON: ${{ inputs.favicon != '' && format('{0}/target/{1}', github.workspace, inputs.favicon) || '' }}
+          DOCS_LOGO: ${{ inputs.logo != '' && format('{0}/target/{1}', github.workspace, inputs.logo) || '' }}
+          DOCS_LOGO_DARK: ${{ inputs.logo-dark != '' && format('{0}/target/{1}', github.workspace, inputs.logo-dark) || '' }}
+          DOCS_LOGO_REPLACES_TITLE: ${{ inputs.logo-replaces-title }}
           DOCS_EXTRA_CSS: ${{ inputs.extra-css != '' && format('{0}/target/{1}', github.workspace, inputs.extra-css) || '' }}
           DOCS_LATEST_RELEASE_TAG: ${{ steps.latest-release.outputs.tag }}
           DOCS_LATEST_RELEASE_URL: ${{ steps.latest-release.outputs.url }}
